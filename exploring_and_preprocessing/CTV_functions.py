@@ -6,9 +6,9 @@ import pandas as pd
 import plotly.express as px
 
 
-def threshold_str(due_list):
+def threshold_str(due_list=None):
     """
-    String necesario para el titulo de la gráfica.
+    Proporciona un string necesario para el titulo de las gráficas.
     """
     if ('1' in due_list) and (len(due_list) == 5):
         string = '30'
@@ -24,9 +24,16 @@ def threshold_str(due_list):
     return string
 
 
-def filter_integers(interval, lst):
+def filter_integers(interval=None,
+                    lst=None):
     """
-    XD
+    Intervalos de tiempo para filtrar.
+    Las opciones son:
+    1. "bimonthly": por bimestre.
+    2. "quarterly": por trimestre.
+    3. "four-month period": por cuatrimestre.
+    4. "semester": por semestre.
+    5. "yearly": anual.
     """
     sorted_lst = sorted(lst, reverse=True)
     if interval == "bimonthly":
@@ -43,9 +50,10 @@ def filter_integers(interval, lst):
         raise ValueError("Interval not recognized")
 
 
-def get_cohort_graph(df_vintage, chosen_bucket):
+def get_cohort_graph(df_vintage=None,
+                     chosen_bucket=None):
     """
-    XD
+    Se construye el gráfico de las cohorts.
     """
     threshold_value = threshold_str(chosen_bucket)
     fig = px.line(df_vintage,
@@ -61,64 +69,87 @@ def get_cohort_graph(df_vintage, chosen_bucket):
 
 def get_vintage_analysis(n=None,
                          df_credit_extend=None,
-                         chosen_bucket=None):  # , time_interval=None, with_graph=True):
+                         chosen_bucket=None):
     """
-    XD
+    Obtención de la tabla que contiene el Análisis de cohorts.
+    Aquí n se refiere a un entero positivo con el que se filtrarán
+    las observaciones cuyas ventanas de observación (window)
+    sean menores o igual a n.
     """
-
+    # Se eliminan los ids cuya ventana de observación se menor que n.
     df_credit_extend_trunc = df_credit_extend[df_credit_extend['window'] >= n]
 
+    # Etiquedado de las "malos clientes".
     df_credit_extend_trunc['STATUS_0_1'] = 0
-    bad_aplicants_index_list =(df_credit_extend_trunc['STATUS'].isin(chosen_bucket))
+    bad_aplicants_index_list = (df_credit_extend_trunc['STATUS'].isin(chosen_bucket))
     df_credit_extend_trunc.loc[bad_aplicants_index_list, 'STATUS_0_1'] = 1
 
-    ##### denominator
+    # Cálculo de la frecuencia en cada cohort.
     df_count_by_cohort = (df_credit_extend_trunc.groupby(['opening_month'])['ID']
                                                 .nunique()
                                                 .to_frame())
     df_count_by_cohort.reset_index(inplace=True)
     df_count_by_cohort.columns = ['opening_month', 'cohort_count']
 
+    # Comienza la construcción de la tabla que contendrá
+    # el Análisis de Cohorts.
     new_columns = ['opening_month', 'month_on_book']
     df_raw_vintage = (df_credit_extend_trunc[new_columns].drop_duplicates()
                                                          .sort_values(new_columns)
                                                          .reset_index(drop=True))
     df_raw_vintage['due_count'] = np.nan
 
+    # Se una cada cohort con su frecuencia.
     df_vintage = pd.merge(df_raw_vintage,
                           df_count_by_cohort,
                           on=['opening_month'],
                           how='left')
 
-    for i in range(-60, 1):  # mes en el que se abrió la cuenta
-        due_ids_lst = []
-        for j in range(0, 61):  # mes después de que se abrió la cuenta
-            df_1 = df_credit_extend_trunc[(df_credit_extend_trunc['STATUS_0_1']==1)  # localización de los clientes morosos
+    # Cálculo de la frecuencia de "clientes malos" en cada cohort.
+    due_ids_in_cohorts = []  # Guardado de los ids de "malos clientes" en cada cohort.
+    for i in range(-60, 1):  # Mes en el que se abrió la cuenta (opening_month).
+        due_ids_lst = []  # Guardado de las freciencias para el mes de inicio i.
+        for j in range(0, 61):  # Mes después de que se abrió la cuenta (month_on_book).
+            df_1 = df_credit_extend_trunc[(df_credit_extend_trunc['STATUS_0_1']==1)  # localización de los clientes morosos.
                                           & (df_credit_extend_trunc['month_on_book'] == j)
                                           & (df_credit_extend_trunc['opening_month'] == i)]
-            due_ids = list(df_1['ID'])  # obtener el ID que cumple con la condición
-            due_ids_lst.extend(due_ids)  # A medida que pasa el tiempo, añadir clientes morosos
+            due_ids = list(df_1['ID'])  # Se obtienen los ids de los "malos clientes" para opening_month i y el month_ob_book j.
+            due_ids_lst.extend(due_ids)  # Se añaden los "malos clientes" a medida que que pasan los meses.
             df_vintage.loc[(df_vintage['month_on_book'] == j)
-                            & (df_vintage['opening_month'] == i), 'due_count'] = len(set(due_ids_lst))  # calcular números de ID no duplicados usando set()
-
+                            & (df_vintage['opening_month'] == i), 'due_count'] = len(set(due_ids_lst))  # Se añade la freciencia, profurando que no haya duplicados.
+        due_ids_in_cohorts.append(due_ids_lst)  # Se añaden los "clientes malos" a medida que cambia el mes de inicio.
+ 
+    # Cálculo de la frecuenca de "malos clientes" para cada month_on_book
+    # Pertenciente a determinando cohort.
     df_vintage['due_rate'] = df_vintage['due_count'] / df_vintage['cohort_count']  # calcular el % acumulado de clientes morosos"
 
-    return df_vintage
+    df_vintage['due_rate'] = round(df_vintage['due_rate'] * 100, 2)
+
+    return df_vintage, due_ids_in_cohorts
 
 
-def get_vintage_analysis_by_interval(df_vintage, time_interval):
+def get_vintage_analysis_by_interval(df_vintage=None,
+                                     time_interval=None,
+                                     cohorts_list=None):
     """
-    Hace un filtrado del análisis completo de cohorts, obtenido de la
-    función get_vintage_analysis. Las opciones son:
+    Hace un filtrado del análisis completo de cohorts usando
+    intervalos de tiempo.
+    Depende de la la tabla resultante de la función "get_vintage_analysis".
+    Las opciones son:
     1. "bimonthly": por bimestre.
     2. "quarterly": por trimestre.
     3. "four-month period": por cuatrimestre.
     4. "semester": por semestre.
     5. "yearly": anual.
+    También permite graficar las cohorts de interés. Aquí, necesariamente
+    el parámetro time_interval debe ser None.
     """
-    lst_opening_month = df_vintage['opening_month'].unique().tolist()
-    list_period = filter_integers(time_interval, lst_opening_month)
-    df_final = df_vintage[df_vintage['opening_month'].isin(list_period)]
+    if time_interval:
+        lst_opening_month = df_vintage['opening_month'].unique().tolist()
+        list_period = filter_integers(time_interval, lst_opening_month)
+        df_final = df_vintage[df_vintage['opening_month'].isin(list_period)]
+    else:
+        df_final = df_vintage[df_vintage['opening_month'].isin(cohorts_list)]
 
     return df_final
 
@@ -127,7 +158,9 @@ def get_mean_cohort(df_vintage=None,
                     chosen_bucket=None,
                     with_graph=True):
     """
-    XD
+    Cálcula el "cohort medio" a través del promedio
+    de las frecuencias acumuladas vistas en
+    cada month_on_book.
     """
     threshold_value = threshold_str(chosen_bucket)
     df_vintage_pivot = df_vintage.pivot(index='opening_month',
@@ -138,17 +171,18 @@ def get_mean_cohort(df_vintage=None,
     d_mean.reset_index(drop=False, inplace=True)
     d_mean.columns = ['month_on_book', 'mean_porcentajes']
 
+    graph_tittle = f'Cohort promedio (> {threshold_value} días de atraso)'
     if with_graph:
         fig = px.scatter(d_mean,
                          x='month_on_book',
                          y='mean_porcentajes',
-                         title=f'Cohort promedio (> {threshold_value} días de atraso)')
+                         title=graph_tittle)
         line_fig = px.line(d_mean,
                            x='month_on_book',
                            y='mean_porcentajes',
                            line_shape='linear')
 
-        fig.add_traces(line_fig.data)  # Agregar las líneas al gráfico de dispersión
+        fig.add_traces(line_fig.data)
 
         fig.show()
 
@@ -157,7 +191,7 @@ def get_mean_cohort(df_vintage=None,
 
 def inner_join(df1, df2):
     """
-    df
+    Mergeo de bases de datos.
     """
     df = pd.merge(df1,
                   df2,
@@ -165,3 +199,14 @@ def inner_join(df1, df2):
                   how='inner')
 
     return df
+
+
+# NOTA: La construcción de estas funciones, sobretodo de
+# la función "get_vintage_analysis" están fuertemente inspirada
+# en un Análisis de Cohorts hecho para esta misma data.
+# Se puede encontrar aquí:
+# https://www.kaggle.com/code/rikdifos/eda-vintage-analysis
+# Algunas consideraciones de código se han tomado de ahí, otras se han cambiado
+# totalmente, y otras se han anexado.
+# Nunca he hecho un Análisis de Cohorts, así que después de documentarme,
+# buscar y correr algunos ejemplos en Medium, me tope con ella en Kaggle.

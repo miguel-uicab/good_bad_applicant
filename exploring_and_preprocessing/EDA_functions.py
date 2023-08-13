@@ -30,11 +30,11 @@ def get_count_missing(data=None,
     count_missing['porcentaje'] = round((count_missing['conteo']/data.shape[0])*100, 2)
     count_missing.sort_values(by='porcentaje', ascending=False, inplace=True)
     count_missing.reset_index(drop=True, inplace=True)
-    
+
     return count_missing
 
 
-def remove_features_with_missing(count=None,
+def remove_features_with_missing(count_missing=None,
                                  threshold=None):
     """
     Devuelve una lista de variables cuyos porcentajes de valores perdidos
@@ -45,7 +45,7 @@ def remove_features_with_missing(count=None,
     float_names_without_missing = total_float_names.copy()
     for name in drop_by_missing:
         float_names_without_missing.remove(name)
-        
+
     return float_names_without_missing
 
 
@@ -60,7 +60,7 @@ def data_filter_by_upper_quantile(data=None,
     for name in list_float_names:
         data_without_outliers = data_without_outliers[(data_without_outliers[name] <= np.nanquantile(data_without_outliers[name],
                                                        upper_quantile)) | (data_without_outliers[name].isna())]
-    
+
     return data_without_outliers
 
 

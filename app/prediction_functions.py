@@ -121,3 +121,4 @@ def OCCUPATION_TYPE_class(occupation_type):
         return 'Others'
     else:
         return occupation_type
+

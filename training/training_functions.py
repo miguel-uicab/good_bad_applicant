@@ -210,8 +210,9 @@ def get_feature_importances(model_name=None,
                             ratio_balance=None):
     """
     Cálcula las importancias de las variables después del ajuste del modelo.
-    1. Para modelo HistGradientBoostingClassifier: se usa shap-values.
-    2. Otro modelo: feature importances dadas por scikit-learn.
+    1. Para modelo HistGradientBoostingClassifier: se usa únicamente
+       shap-values.
+    2. Otro modelo: se usa tanto scikit-learn como shap-values.
     """
     if model_name == 'HistGradientBoostingClassifier':
         pd_f_i = get_shap_feature_importances(clf_final=clf_final,
@@ -421,6 +422,7 @@ def training_model(best_hyper_info=None,
                    objective_name=None,
                    with_feature_importances=None,
                    with_probability_density=None,
+                   save_model_info=False,
                    path=None):
     """
     Ajusta y guarda el modelo optimizado. Sus parámetros son:
@@ -431,6 +433,8 @@ def training_model(best_hyper_info=None,
     * model_name: String. Selección del nombre del estimador.
       Por el momento solo hay dos opciones, 'HistGradientBoostingClassifier'
       y 'RandomForestClassifier'.
+    *save_model_info: Binario. Guardar los archivos involucrados en el
+     entrenamiento final.
     * with_feature_importances: Binario. Calcula la feature importances
       vía shap-values. Construye el gráfico correspondiente.
     * with_probability_density: Binario. Cálcula las probabilidades
@@ -459,15 +463,6 @@ def training_model(best_hyper_info=None,
     # Se obtienen los nombres de variables numéricas y de las categóricas.
     numeric_names = list(features.select_dtypes(include=['float64', 'int64']).columns)
     categorical_names = list(features.select_dtypes(include='object').columns)
-
-    # Configuración de scores.
-    scores = {'f1': 'f1',
-              'f1_micro': 'f1_micro',
-              'precision': 'precision',
-              'precision_micro': 'precision_micro',
-              'recall': 'recall',
-              'recall_micro': 'recall_micro',
-              'm_c': make_scorer(matthews_corrcoef)}
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(features,
@@ -504,11 +499,11 @@ def training_model(best_hyper_info=None,
     f_1 = f1_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
-    # a_s = accuracy_score(y_test, y_pred)
+    a_s = accuracy_score(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_pred)
     m_c = matthews_corrcoef(y_test, y_pred)
-    # precision_maj = list(precision_score(y_test, y_pred, average=None))[0]
-    # recall_maj = list(recall_score(y_test, y_pred, average=None))[0]
+    precision_maj = list(precision_score(y_test, y_pred, average=None))[0]
+    recall_maj = list(recall_score(y_test, y_pred, average=None))[0]
     f_1_micro = f1_score(y_test, y_pred, average='micro')
     precision_micro = precision_score(y_test, y_pred, average='micro')
     recall_micro = recall_score(y_test, y_pred, average='micro')
@@ -517,24 +512,26 @@ def training_model(best_hyper_info=None,
     best_hyper_info['final_f1_score'] = f_1
     best_hyper_info['final_recall'] = recall
     best_hyper_info['final_precision'] = precision
-    # best_hyper_info['final_accuracy'] = a_s
+    best_hyper_info['final_accuracy'] = a_s
     best_hyper_info['final_roc_auc'] = roc_auc
     best_hyper_info['final_matthews_corrcoef'] = m_c
-    # best_hyper_info['final_recall_maj'] = recall_maj
-    # best_hyper_info['final_precision_maj'] = precision_maj
+    best_hyper_info['final_recall_maj'] = recall_maj
+    best_hyper_info['final_precision_maj'] = precision_maj
     best_hyper_info['final_f_1_micro'] = f_1_micro
     best_hyper_info['final_precision_micro'] = precision_micro
     best_hyper_info['final_recall_micro'] = recall_micro
     best_hyper_info['train_date'] = datetime.datetime.now()
     pd_best_info = pd.DataFrame(best_hyper_info).T
-    save_name_best_info = f'final_model_info_{objective_name}_{ratio_balance}.sav'
-    save_name = f'{path}{save_name_best_info}'
-    pickle.dump(pd_best_info, open(save_name, 'wb'))
-    pickle.dump(clf, open(f'{path}risk_model.sav', 'wb'))
-    pickle.dump(X_test, open(f'{path}X_test.sav', 'wb'))
-    pickle.dump(y_test, open(f'{path}y_test.sav', 'wb'))
-    pickle.dump(X_train, open(f'{path}X_train.sav', 'wb'))
-    pickle.dump(y_train, open(f'{path}y_train.sav', 'wb'))
+
+    if save_model_info:
+        save_name_best_info = f'final_model_info_{objective_name}_{ratio_balance}.sav'
+        save_name = f'{path}{save_name_best_info}'
+        pickle.dump(pd_best_info, open(save_name, 'wb'))
+        pickle.dump(clf, open(f'{path}risk_model.sav', 'wb'))
+        pickle.dump(X_test, open(f'{path}X_test.sav', 'wb'))
+        pickle.dump(y_test, open(f'{path}y_test.sav', 'wb'))
+        pickle.dump(X_train, open(f'{path}X_train.sav', 'wb'))
+        pickle.dump(y_train, open(f'{path}y_train.sav', 'wb'))
 
     if with_probability_density:
         logging.info('CONSTRUCCIÓN DE DENSIDAD DE PROBABILIDADES DE X_TEST.')

@@ -6,7 +6,7 @@ import pandas as pd
 from pydantic import BaseModel
 from typing import Optional
 
-#############################################################################
+
 class Json_Dict(BaseModel):
     """
     Variables needed for prediction.

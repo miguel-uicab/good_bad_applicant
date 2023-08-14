@@ -1,23 +1,25 @@
 # __RISK MODEL__
 
 ## __1. OBJETIVO.__
-Se predende ofrecer un producto de Ciencia de Datos que tenga como fin el
-predecir el perﬁl crediticio de los clientes potenciales, clasiﬁcándolos en categorías de "buenos" o "malos".
+Se predende ofrecer una herramienta de Ciencia de Datos que tenga como fin el
+predecir el perﬁl crediticio de un potencial cliente al etiquetarlo como "BUENO" o "MALO".
+
+Para alcanzar dicho fin, se ha desarrollado una API que, dada cierta información de la aplicación del cliente al producto de interés, es capaz de devolver dicha etiqueta con un grado de confianza razonable.
 
 ## __2. MPV ACTUAL.__
-Se trata de una API capaz de ofrecer una etiqueta de "BUENO" O "MALO" a un posible cliente.
+Ya se ha desarrollado una primera versión de la API. Es capaz de ofrecer una etiqueta de "BUENO" O "MALO". Tiene asociado un modelo de Machine Learning entrenado con ayuda del historial que se tiene de los clientes anteriores.
 
 ## __3. SOBRE EL REPOSITORIO EN GITHUB.__
-Se puede consultar [aquí](https://github.com/miguel-uicab/good_bad_applicant). El respositorio raíz se llama __good_bad_applicant__. 
+La código desarrollado para la creación de la API se puede consultar [aquí](https://github.com/miguel-uicab/good_bad_applicant). El respositorio raíz se llama __good_bad_applicant__. 
 
 Para la codificación se ha usado python versión `3.8.12`.
 
-El repositorio contiene 6 carpetas. Cada carpeta contiene un archivo *requiriments.txt* que contiene las versiones de paqueterías necesarias. Se recomienda instalar estas paqueterías en ambientes aislados. También, cada carpeta cuenta con una seré de scripts auxiliares que son utilizados en los jupyter notebooks.
+El repositorio contiene 6 carpetas. Cada carpeta contiene un archivo *requiriments.txt* que contiene las versiones de paqueterías necesarias. Se recomienda instalar estas paqueterías en ambientes aislados. También, cada carpeta cuenta con una serie de scripts en python auxiliares que son utilizados por los jupyter notebooks.
 
 Las 6 carpetas son:
 1. __data/:__ Contiene las datas csv originales.
 2. __exploratory_and_preprocessing/:__ Contiene los archivos necesarios para la construcción de la variable objetivo, el análsis exploratorio de datos y preprocesamiento. El orden en que deben consultarse lo archivos notebooks es:
-    1. *construction_target_variable.ipynb*: LLeva a cabo un Análisis de Cohorts con el fin de obtener una etiqueta de "BUEN" o "MAL" cliente.
+    1. *construction_target_variable.ipynb*: LLeva a cabo un Análisis de Cohorts con el fin de obtener una etiqueta de "BUENO" o "MALO".
     2. *exploring_preprocessing.ipynb*: Se lleva a cabo la exploración de la data y el preprocesamiento.
 3. __outputs/:__ Contiene los archivos binarios resultantes de los procesos de preprocesamiento de data y ajuste final modelo. Además, contiene gráficos informativos en formato `html`. De entre todos los archivos, el binario contenedor del modelo de ML es `risk_model.sav`.
 4. __training/:__ Contiene los archivos necesarios para el entrenamiento, optimización, y guardado del modelo. El orden en que deben ser consultados los archivos notebooks es:
@@ -53,10 +55,10 @@ y la ingeniería de características, con el fin de obtener la versión definiti
 
 La salida que se espera es una estructura `json` de la forma 
 ```
-{'probability': 0.69, 'category': 'MALO', 'version': '1.0'}
+{'probability': 0.63, 'category': 'MALO', 'version': '1.0'}
 ```
 donde:
-1. `probability`: Es la probabilidad el aplicante sea considerado como "MALO".
+1. `probability`: Es la probabilidad de que el potencial cliente sea considerado como "MALO".
 2. `category`: Categoría dependiente de la probabilidad. Si la probabilidad es mayor a 0.5, la categoría será 'MALO', en caso contrario, será 'BUENO'.
 3. `version`: Es la versión del modelo.
 
@@ -99,10 +101,10 @@ Se puede correr la app, ahora ya en un contendor, usando lo siguiente:
 docker run -p 8000:8000 model_risk_app 
 ```
 
-## __6. FUTURO DEL PROYECTO: DESPLIEGUE DE LA APLICACIÓN Y MONITOREO.__
+## __6. FUTURO DEL PROYECTO: DESPLIEGUE DE LA APLICACIÓN A PRODUCCIÓN Y MONITOREO.__
 
 Queda pendiente la construcción de infraestructura necesaria para
-asegurar la escala de la aplicación. Esta escalabilidad conlleva el despliegue del modelo en producción y su monitoreo.
+asegurar la escalabilidad de la aplicación. Esta escalabilidad conlleva el despliegue del modelo en producción y su monitoreo.
 
 En cuanto al monitoreo, se refiera a tener bajo vigilancia los cambios que se tienen en la distribución de los datos a través del tiempo (__drift__), tanto en las features como en la variable objetivo. Cualquier cambio significativo debe dar lugar a una revisión del modelo, para su actualización o sustitución, pues este cambio puede afectar negativamente el rendimiento del modelo en producción. Para hacer esto, se puede recurrir a herramientas como [evently](https://github.com/evidentlyai/evidently).
 

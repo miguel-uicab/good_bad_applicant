@@ -77,10 +77,10 @@ def predict(json_dict: Json_Dict,
     df['WORK_YEARS'] = -df['DAYS_EMPLOYED'] / 365
     df["WORK_YEARS"] = df["WORK_YEARS"].astype(int)
 
-    # Se convierte a tipó numérico las variables correspondientes.
     df = transform_data_type_to_float(data=df,
                                       list_names=float_names)
 
+    # Se realiza el tratamiento de variables categóricas.
     df_FILLNA_CATEGORIC = fillna_categoric_data(data=df,
                                                 list_names=categorical_names)
 
@@ -99,7 +99,8 @@ def predict(json_dict: Json_Dict,
     data_order = df_HOMO_CLASS[feature_names_order]
 
     # Se carga modelo.
-    clf = pickle.load(open(f'{path}risk_model.sav', 'rb'))
+    clf = pickle.load(open(f'{path}risk_model.sav',
+                           'rb'))
 
     # Cálculo de probabilidades.
     predict_array = clf.predict_proba(data_order)

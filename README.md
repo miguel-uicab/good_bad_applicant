@@ -102,9 +102,9 @@ Se puede correr la app, ahora ya en un contendor, usando lo siguiente:
 docker run -p 8000:8000 model_risk_app 
 ```
 
-## __6. PROTOTIPO DE LA APLICACIÓN WEB__
+## __6. PROTOTIPO DE LA APLICACIÓN WEB.__
 
-### Para visualizar de manera local
+### Para visualizar de manera local.
 Para tener una idea del frontend que servirá la app, previo a que esta ya haya sido ejecutada (ver sección 5.), se puede correr una aplicación Streamlit de la siguiente manera.
 
 ```
@@ -117,7 +117,7 @@ Al hacerlo, se podrá ver un frontend como sigue:
 
 ![stream1](images/stream2.png)
 
-### Contenerización de la app Streamlit
+### Contenerización de la app Streamlit.
 
 Para construir una imagen usando docker, se puede correr lo siguiente:
 ```

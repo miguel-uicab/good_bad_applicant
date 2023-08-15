@@ -6,7 +6,7 @@ COPY requirements.txt /streamlit-app/requirements.txt
 
 RUN pip install -U pip && pip install -r /streamlit-app/requirements.txt 
 
-COPY streamlit-app.py weatherAUS.csv /streamlit-app/
+COPY streamlit-app.py df_application_final_new.sav /streamlit-app/
 
 EXPOSE 8501
 
